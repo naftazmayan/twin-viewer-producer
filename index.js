@@ -30,10 +30,10 @@ const { DatabaseService, Orm } = require("./orm");
 
 const sql = require("mssql");
 
-let socketLocal = null
+let socketLocal = null;
 let socketDestination = null;
 let globalPool = null;
-let wellInfo = null
+let wellInfo = null;
 
 const wellId = process.argv[2];
 
@@ -57,27 +57,23 @@ async function initSQL() {
 
     globalPool = pool;
 
-    globalOrm = new Orm(db, wellId); 
+    globalOrm = new Orm(db, wellId);
     wellInfo = await globalOrm.getWellById();
 
     globalTransfer = new TransferService(db, wellId, socketDestination);
-
   } catch (error) {
-
     console.error("Error connecting to SQL:", error);
     process.exit(1);
   }
 }
 
-
-let intervalComments = null;  // متغیر برای ذخیره ارجاع به interval
-let intervalCommentsDeleted = null;  // برای کامنت‌شده‌ها
-let intervalMasterLog = null;  // برای کامنت‌شده‌ها
-let intervalMasterLogDeleted = null;  // برای کامنت‌شده‌ها
-let intervalFailedProcessData = null;  // برای کامنت‌شده‌ها
+let intervalComments = null; // متغیر برای ذخیره ارجاع به interval
+let intervalCommentsDeleted = null; // برای کامنت‌شده‌ها
+let intervalMasterLog = null; // برای کامنت‌شده‌ها
+let intervalMasterLogDeleted = null; // برای کامنت‌شده‌ها
+let intervalFailedProcessData = null; // برای کامنت‌شده‌ها
 
 async function initSocketDestination() {
-
   const token = await getTokenWithRetry(
     hostDestination,
     process.env.LOCAL_API_USERNAME,
@@ -94,7 +90,6 @@ async function initSocketDestination() {
 
       if (globalTransfer) globalTransfer.setSocket(socket);
 
-
       try {
         if (TRANSFER) {
           await globalTransfer.sendWell();
@@ -102,31 +97,50 @@ async function initSocketDestination() {
           if (TRANSFER_COMMENTS) {
             globalTransfer.sendComments();
             console.log(`# [Transfer] [Comments] Interval`);
-            intervalComments = setInterval(() => globalTransfer.sendComments(), INTERVAL_COMMENTS);
+            intervalComments = setInterval(
+              () => globalTransfer.sendComments(),
+              INTERVAL_COMMENTS
+            );
           }
 
           if (TRANSFER_COMMENTS_DELETED) {
             globalTransfer.sendCommentsDeleted();
-            // console.log(`# [Transfer] [Comments Deleted] Interval`);
-            // intervalCommentsDeleted = setInterval(() => globalTransfer.sendCommentsDeleted(), INTERVAL_COMMENTS_DELETED);
+            console.log(`# [Transfer] [Comments Deleted] Interval`);
+            intervalCommentsDeleted = setInterval(
+              () => globalTransfer.sendCommentsDeleted(),
+              INTERVAL_COMMENTS_DELETED
+            );
           }
 
-          //if (TRANSFER_MASTERLOG) {
-            // globalTransfer.sendMasterLogs();
-            // console.log(`# [Transfer] [Master Log] Interval: ${INTERVAL_MASTERLOG}`);
-            // intervalMasterLog = setInterval(globalTransfer.sendMasterLogs, INTERVAL_MASTERLOG);
-          //}
+          if (TRANSFER_MASTERLOG) {
+            globalTransfer.sendMasterLogs();
+            console.log(
+              `# [Transfer] [Master Log] Interval: ${INTERVAL_MASTERLOG}`
+            );
+            intervalMasterLog = setInterval(
+              globalTransfer.sendMasterLogs,
+              INTERVAL_MASTERLOG
+            );
+          }
 
-          // if (TRANSFER_MASTERLOG_DELETED) {
-          //   globalTransfer.sendMasterLogsDeleted();
-          //   console.log(`# [Transfer] [Master Log Deleted] Interval: ${INTERVAL_MASTERLOG_DELETED}`);
-          //   intervalMasterLogDeleted = setInterval(globalTransfer.sendMasterLogsDeleted, INTERVAL_MASTERLOG_DELETED);
-          // }
+          if (TRANSFER_MASTERLOG_DELETED) {
+            globalTransfer.sendMasterLogsDeleted();
+            console.log(
+              `# [Transfer] [Master Log Deleted] Interval: ${INTERVAL_MASTERLOG_DELETED}`
+            );
+            intervalMasterLogDeleted = setInterval(
+              globalTransfer.sendMasterLogsDeleted,
+              INTERVAL_MASTERLOG_DELETED
+            );
+          }
 
           if (TRANSFER_FAILED_PROCESS_DATA) {
             globalTransfer.sendFailedData();
             console.log(`# [Transfer] [Failed Process Data] Interval`);
-            // intervalFailedProcessData = setInterval(() => globalTransfer.sendFailedData(), INTERVAL_FAILED_PROCESS_DATA);
+            intervalFailedProcessData = setInterval(
+              () => globalTransfer.sendFailedData(),
+              INTERVAL_FAILED_PROCESS_DATA
+            );
           }
         }
       } catch (err) {
@@ -137,7 +151,7 @@ async function initSocketDestination() {
       console.log("# [Destination] Socket disconnected");
 
       // close connection
-      globalTransfer.setSocket(null)
+      globalTransfer.setSocket(null);
 
       // قطع کردن intervalها وقتی سوکت قطع می‌شود
       if (intervalComments) {
@@ -166,9 +180,7 @@ async function initSocketDestination() {
       }
     },
   });
-
 }
-
 
 // Initialize Local Socket
 async function initSocketLocal() {
@@ -201,7 +213,6 @@ async function initDataProcessing() {
     }
 
     await globalTransfer.sendProcessData(data);
-
   }, INTERVAL_CONTROLLER);
 }
 
@@ -211,7 +222,7 @@ async function main() {
     await initSQL();
     initDataProcessing();
     initSocketDestination();
-    // initSocketLocal();
+    initSocketLocal();
   } catch (error) {
     console.error(
       "# [Critical Error] Application initialization failed:",
