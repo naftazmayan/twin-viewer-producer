@@ -116,6 +116,7 @@ class TransferService {
         "producer-processData",
         this.wellId,
         compressedData,
+        config.TRANSFER_ONLINE_PROCESS_DATA_SAVE,
         (ack) => {
           if (!ack.success) {
             this.orm.saveFailedData(
