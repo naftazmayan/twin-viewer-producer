@@ -1,8 +1,9 @@
 module.exports = {
   apps: [
     {
-      name: "twin-viewer-producer",
-      script: "./index.js 28",
+      name: `twin-viewer-producer-${process.env.WELL_ID}`,
+      script: "./index.js",
+      args: [process.env.WELL_ID], // wellID
       env: {
         NODE_ENV: "production",
         ENV_PATH: "./.env",
