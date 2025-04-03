@@ -4,7 +4,6 @@ const config = require("./config");
 const { getLastCommentId, getLastCommentDeletedId } = require("./socket");
 
 class TransferService {
-
   constructor(databaseService, wellId, socket) {
     if (!databaseService || !wellId) {
       throw new Error("Database service and wellId are required.");
@@ -28,7 +27,9 @@ class TransferService {
 
   async sendFailedData() {
     try {
-      const failedDataCount = await this.orm.getFailedDataCount(config.hostDestination);
+      const failedDataCount = await this.orm.getFailedDataCount(
+        config.hostDestination
+      );
 
       if (failedDataCount === 0) {
         console.log("# [Resend] No failed data to resend.");
@@ -57,7 +58,10 @@ class TransferService {
             compressedData,
             async (ack) => {
               if (ack && ack.success) {
-                await this.orm.deleteFailedDataBatch(config.hostDestination, failedDataBatch);
+                await this.orm.deleteFailedDataBatch(
+                  config.hostDestination,
+                  failedDataBatch
+                );
                 resolve();
               } else {
                 reject(new Error("Failed to resend batch."));
@@ -73,11 +77,12 @@ class TransferService {
 
   async sendWell() {
     try {
-
       // دریافت اطلاعات چاه
       const wellInfo = await this.orm.getWellById();
       if (!wellInfo) {
-        console.error(`# [Transfer] [well] Error: Well not found for wellId: ${this.wellId}`);
+        console.error(
+          `# [Transfer] [well] Error: Well not found for wellId: ${this.wellId}`
+        );
         return;
       }
 
@@ -86,16 +91,22 @@ class TransferService {
 
       // ارسال اطلاعات والد در صورت وجود
       if (wellInfo.WellParentId) {
-        const wellParentInfo = await this.orm.getWellById(wellInfo.WellParentId);
+        const wellParentInfo = await this.orm.getWellById(
+          wellInfo.WellParentId
+        );
         if (wellParentInfo) {
-          this.socket.emit("producer-well", { ...wellParentInfo, socketIsConnected: true });
+          this.socket.emit("producer-well", {
+            ...wellParentInfo,
+            socketIsConnected: true,
+          });
         } else {
-          console.warn(`# [Transfer] [well] Parent well not found for parentId: ${wellInfo.WellParentId}`);
+          console.warn(
+            `# [Transfer] [well] Parent well not found for parentId: ${wellInfo.WellParentId}`
+          );
         }
       }
 
       console.log(`# [Transfer] [well] End - Well data transfer completed.`);
-
     } catch (error) {
       console.error(`# [Transfer] [well] Error in sendWell:`, error);
     }
@@ -104,18 +115,23 @@ class TransferService {
   async sendProcessData(data) {
     if (this.socket && this.socket.connected) {
       const compressedData = await compressData(data);
-        this.socket.emit(
-          "producer-processData",
-          this.wellId,
-          compressedData,
-          (ack) => {
-            if (!ack.success) {
-              this.orm.saveFailedData(data.code, data.dater, config.hostDestination)
-            }
+      this.socket.emit(
+        "producer-processData",
+        this.wellId,
+        compressedData,
+        (ack) => {
+          if (!ack.success) {
+            this.orm.saveFailedData(
+              data.code,
+              data.dater,
+              config.hostDestination
+            );
           }
-        );
+        }
+      );
     } else {
-      this.orm.saveFailedData(data.code, data.dater, config.hostDestination)
+      if (data)
+        this.orm.saveFailedData(data.code, data.dater, config.hostDestination);
     }
   }
 
@@ -148,16 +164,16 @@ class TransferService {
         this.socket.emit("producer-masterlog", this.wellId, compressedData);
       }
 
-      console.log("# [Transfer] [masterLogs] All master logs transferred successfully.");
+      console.log(
+        "# [Transfer] [masterLogs] All master logs transferred successfully."
+      );
     } catch (error) {
       console.error("# [Transfer] [masterLogs] Error:", error);
     }
   }
 
   async sendComments() {
-
     try {
-
       const lastCommentId = await getLastCommentId(this.socket, this.wellId);
 
       const comments = await this.orm.getComments(lastCommentId);
@@ -168,13 +184,14 @@ class TransferService {
       }
 
       const totalBatches = Math.ceil(comments.length / this.batchSizeComments);
-      console.log(`# [Transfer] [comments] Total batches to transfer: ${totalBatches}`);
+      console.log(
+        `# [Transfer] [comments] Total batches to transfer: ${totalBatches}`
+      );
 
       for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
         const start = batchIndex * this.batchSizeComments;
         const end = Math.min(start + this.batchSizeComments, comments.length);
         const batch = comments.slice(start, end);
-
 
         const compressedData = await compressData(batch);
 
@@ -188,18 +205,21 @@ class TransferService {
                 if (ack && ack.success) {
                   resolve();
                 } else {
-                  reject(new Error('Failed to transfer batch.'));
+                  reject(new Error("Failed to transfer batch."));
                 }
               }
             );
           });
         } catch (err) {
-          console.error(`# [Transfer] [comments] Error in transferring batch ${batchIndex + 1}:`, err);
-          throw err;  // Throwing error to exit the loop
+          console.error(
+            `# [Transfer] [comments] Error in transferring batch ${
+              batchIndex + 1
+            }:`,
+            err
+          );
+          throw err; // Throwing error to exit the loop
         }
       }
-
-
     } catch (error) {
       console.error(`# [Transfer] [comments] Error:`, error);
       // می‌توانید خطا را ارسال کنید یا به سیستم دیگری ذخیره کنید
@@ -208,35 +228,50 @@ class TransferService {
 
   async sendCommentsDeleted() {
     try {
-      const lastId = await getLastCommentDeletedId(this.socket, this.wellId)
+      const lastId = await getLastCommentDeletedId(this.socket, this.wellId);
 
       const deletedComments = await this.orm.getCommentsDeleted(lastId);
 
       if (!deletedComments || deletedComments.length === 0) {
-        console.log(`# [Transfer] [comments-deleted] No deleted comments to transfer.`);
+        console.log(
+          `# [Transfer] [comments-deleted] No deleted comments to transfer.`
+        );
         return;
       }
 
-      const totalBatches = Math.ceil(deletedComments.length / this.batchSizeCommentsDeleted);
-      console.log(`# [Transfer] [comments-deleted] Total batches to transfer: ${totalBatches}`);
+      const totalBatches = Math.ceil(
+        deletedComments.length / this.batchSizeCommentsDeleted
+      );
+      console.log(
+        `# [Transfer] [comments-deleted] Total batches to transfer: ${totalBatches}`
+      );
 
       for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
         const start = batchIndex * this.batchSizeCommentsDeleted;
-        const end = Math.min(start + this.batchSizeCommentsDeleted, deletedComments.length);
+        const end = Math.min(
+          start + this.batchSizeCommentsDeleted,
+          deletedComments.length
+        );
         const batch = deletedComments.slice(start, end);
-
 
         const compressedData = await compressData(batch);
 
         // انتقال داده‌ها از طریق سوکت
-        this.socket.emit("producer-comments-deleted", this.wellId, compressedData);
+        this.socket.emit(
+          "producer-comments-deleted",
+          this.wellId,
+          compressedData
+        );
 
         // ادامه دادن به Batch بعدی
       }
 
       console.log(`# [Transfer] [comments-deleted] All batches processed.`);
     } catch (error) {
-      console.error(`# [Transfer] [comments-deleted] Error during transfer:`, error);
+      console.error(
+        `# [Transfer] [comments-deleted] Error during transfer:`,
+        error
+      );
     }
   }
 

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "NODE_ENV=production bun build index.js --outdir ./build-twin-viewer-producer --target node --minify && cpx .env ./build-twin-viewer-producer && cpx ecosystem.config.js ./build-twin-viewer-producer"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +14,8 @@
     "mssql": "^11.0.1",
     "socket.io-client": "^4.8.1",
     "zlib": "^1.0.5"
+  },
+  "devDependencies": {
+    "cpx": "^1.5.0"
   }
 }
