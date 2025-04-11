@@ -97,7 +97,7 @@ class TransferService {
         if (wellParentInfo) {
           this.socket.emit("producer-well", {
             ...wellParentInfo,
-            socketIsConnected: true,
+            SocketIsConnected: true,
           });
         } else {
           console.warn(
