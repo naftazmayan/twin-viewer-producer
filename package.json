@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "NODE_ENV=production bun build index.js --outdir ./build-twin-viewer-producer --target node --minify && cpx .env ./build-twin-viewer-producer && cpx ecosystem.config.js ./build-twin-viewer-producer"
+    "build": "NODE_ENV=production bun build src/index.js --outdir ./build-twin-viewer-producer --target node --minify && cpx .env ./build-twin-viewer-producer && cpx ecosystem.config.js ./build-twin-viewer-producer"
   },
   "keywords": [],
   "author": "",

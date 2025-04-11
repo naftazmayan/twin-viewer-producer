@@ -30,3 +30,4 @@ dist-ssr
 backend/temp/*
 bun.lock
 build-twin-viewer-producer/*
+build-twin-viewer-producer.zip
