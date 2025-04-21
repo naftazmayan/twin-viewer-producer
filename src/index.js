@@ -30,6 +30,7 @@ const { TransferService } = require("./transfer");
 const { DatabaseService, Orm } = require("./orm");
 
 const sql = require("mssql");
+const config = require("./config");
 
 let socketLocal = null;
 let socketDestination = null;
@@ -93,7 +94,7 @@ async function initSocketDestination() {
 
       try {
         if (TRANSFER) {
-          await globalTransfer.sendWell();
+          if (config.TRANSFER_WELL) await globalTransfer.sendWell();
 
           if (TRANSFER_COMMENTS) {
             globalTransfer.sendComments();
@@ -223,9 +224,9 @@ async function initDataProcessing() {
 async function main() {
   try {
     await initSQL();
+    if (config.TRANSFER) initSocketDestination();
+    if (config.REALTIME_TRANSFER) initSocketLocal();
     initDataProcessing();
-    initSocketDestination();
-    initSocketLocal();
   } catch (error) {
     console.error(
       "# [Critical Error] Application initialization failed:",
